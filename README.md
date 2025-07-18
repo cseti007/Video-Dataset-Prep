@@ -3,7 +3,7 @@
 ## Split_scenes.py
 I recommend using the [split_scenes.py](https://github.com/Lightricks/LTX-Video-Trainer/blob/main/scripts/split_scenes.py) file from the LTX-Video-Trainer repo for this purpose.
 
-IT is a Python utility for automatically detecting and splitting videos into individual scenes based on visual content changes.
+It is a Python utility for automatically detecting and splitting videos into individual scenes based on visual content changes.
 
 ## Frame_Bucketeer.py
 A Python utility that analyzes MP4 files by frame count and organizes them into appropriate buckets.
