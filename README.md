@@ -1,6 +1,6 @@
 # Video Dataset Preparation utilities
 
-## Frame_Bucketeer
+## Frame_Bucketeer.py
 A Python utility that analyzes MP4 files by frame count and organizes them into appropriate buckets.
 
 ### Key Features
@@ -21,7 +21,7 @@ A Python utility that analyzes MP4 files by frame count and organizes them into 
 python bucketeer.py /path/to/videos --buckets 30,60,120,300
 ```
 
-## FPS changer
+## FPS_changer.py
 A simple Python script to change the FPS (frames per second) of all videos in a folder.
 
 ### Key Features
@@ -41,7 +41,7 @@ A simple Python script to change the FPS (frames per second) of all videos in a 
 python fps-changer.py --input /path/to/videos --output /path/to/output --fps 16
 ```
 
-## Video resoultion and fps analyzer
+## video_res_fps_analyzer.py
 A simple Python script to analyze video files and display their resolution, aspect ratio, frame count, and FPS information.
 
 ### Key Features
@@ -73,7 +73,7 @@ Verify FFprobe is working:
 
 Basic usage:
 ```
-python video_info.py /path/to/videos
+python video_res_fps_analyzer.py /path/to/videos
 ```
 
 #### Command Line Options
@@ -83,3 +83,63 @@ python video_info.py /path/to/videos
 - ```--no-duration``` - Skip frame count and FPS information for faster processing
 - ```--debug``` - Enable debug output to troubleshoot file detection issues
 - ```-h, --help``` - Show help message
+
+## ar_normalizer.py
+A Python utility that normalizes video aspect ratios using intelligent cropping while preserving maximum quality.
+
+### Key Features
+
+- Normalizes all videos in a folder to a target aspect ratio (default 16:9)
+- Uses intelligent cropping to maintain content without black bars or distortion
+- Preserves original quality when videos already have the correct aspect ratio (simple copy)
+- Maintains highest possible quality for processed videos (CRF 18, audio copy)
+- Automatically calculates optimal output dimensions based on input video resolution
+- Supports all common video formats (MP4, MOV, AVI, MKV, M4V, WMV, FLV, WebM)
+
+### Requirements
+
+- Python 3.6+
+- FFmpeg (must be installed and available in PATH)
+- FFprobe (usually included with FFmpeg)
+
+### Usage
+
+**Basic usage (16:9 aspect ratio):**
+```bash
+python ar_normalizer.py /path/to/input /path/to/output
+```
+
+**Custom aspect ratio:**
+```bash
+python ar_normalizer.py /path/to/input /path/to/output --aspect-ratio 1.33
+```
+
+**Fixed width or height:**
+```bash
+# All videos will have 1920px width, height calculated from aspect ratio
+python ar_normalizer.py /path/to/input /path/to/output --aspect-ratio 1.78 --width 1920
+
+# All videos will have 1080px height, width calculated from aspect ratio  
+python ar_normalizer.py /path/to/input /path/to/output --aspect-ratio 1.78 --height 1080
+```
+
+### How It Works
+
+**Smart Processing:**
+- Videos with correct aspect ratio (±0.01 tolerance) are simply copied without re-encoding
+- Videos needing correction are cropped from the center and scaled to target dimensions
+- Audio is always preserved without re-encoding to maintain quality
+
+**Cropping Logic:**
+- **Square videos (1:1) → 16:9**: Crops top and bottom, maintains width
+- **Portrait videos (9:16) → 16:9**: Crops top and bottom significantly  
+- **Wide videos (2:1) → 16:9**: Crops left and right sides
+- Always crops from the center to preserve the most important content
+
+### Common Aspect Ratios
+
+- **1.78** (16:9) - Standard widescreen, YouTube, most displays
+- **1.33** (4:3) - Classic TV, older content
+- **1.0** (1:1) - Square format, Instagram posts
+- **0.56** (9:16) - Vertical format, TikTok, Instagram Stories
+- **2.35** (21:9) - Cinematic widescreen
