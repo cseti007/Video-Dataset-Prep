@@ -1,6 +1,6 @@
 # Video Dataset Preparation utilities
 
-## Bucketeer script
+## Frame_Bucketeer
 A Python utility that analyzes MP4 files by frame count and organizes them into appropriate buckets.
 
 ### Key Features
@@ -40,3 +40,46 @@ A simple Python script to change the FPS (frames per second) of all videos in a 
 ```
 python fps-changer.py --input /path/to/videos --output /path/to/output --fps 16
 ```
+
+## Video resoultion and fps analyzer
+A simple Python script to analyze video files and display their resolution, aspect ratio, frame count, and FPS information.
+
+### Key Features
+Analyzes all video files in a folder and displays comprehensive information
+Shows resolution, aspect ratio, total frame count, and FPS for each video
+Supports recursive scanning of subdirectories
+Works with a wide range of video formats (MP4, AVI, MKV, MOV, and many more)
+Fast processing using FFprobe
+Debug mode for troubleshooting file detection issues
+
+### Requirements
+
+- Python 3.6 or higher
+- FFmpeg with FFprobe (must be installed separately and available in your PATH)
+
+### Installation
+
+Install FFmpeg:
+
+- Windows: Download from https://ffmpeg.org/download.html
+- macOS: brew install ffmpeg
+- Linux: sudo apt install ffmpeg (Ubuntu/Debian) or sudo yum install ffmpeg (CentOS/RHEL)
+
+
+Verify FFprobe is working:
+```ffprobe -version```
+
+### Usage
+
+Basic usage:
+```
+python video_info.py /path/to/videos
+```
+
+#### Command Line Options
+
+- ```folder``` - Input folder path (required)
+- ```-r, --recursive``` - Search recursively in subdirectories
+- ```--no-duration``` - Skip frame count and FPS information for faster processing
+- ```--debug``` - Enable debug output to troubleshoot file detection issues
+- ```-h, --help``` - Show help message
