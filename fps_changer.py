@@ -1,10 +1,42 @@
 import os
 import subprocess
 import argparse
-from pathlib import Path
+def get_video_fps(input_path):
+    """
+    Get the FPS of a video file using ffprobe.
+    
+    Args:
+        input_path (str): Path to the video file
+    
+    Returns:
+        float: FPS of the video, or 30.0 as default if detection fails
+    """
+    try:
+        command = [
+            'ffprobe',
+            '-v', 'quiet',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=r_frame_rate',
+            '-of', 'csv=p=0',
+            input_path
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        fps_fraction = result.stdout.strip()
+        
+        # Parse fraction (e.g., "30/1" or "2997/100")
+        if '/' in fps_fraction:
+            num, den = fps_fraction.split('/')
+            fps = float(num) / float(den)
+        else:
+            fps = float(fps_fraction)
+        
+        return fps
+    except:
+        # Default to 30 FPS if detection fails
+        return 30.0
 
 
-def change_video_fps(input_path, output_path, target_fps):
+def change_video_fps(input_path, output_path, target_fps, duration_mode='preserve'):
     """
     Change the FPS of a video file using FFmpeg.
     
@@ -12,21 +44,68 @@ def change_video_fps(input_path, output_path, target_fps):
         input_path (str): Path to the input video file
         output_path (str): Path to save the output video file
         target_fps (float): Target frames per second
+        duration_mode (str): 'preserve' to keep original duration, 'change' to alter duration
     
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # Create the FFmpeg command
-        command = [
-            'ffmpeg',
-            '-i', input_path,
-            '-filter:v', f'fps={target_fps}',
-            '-c:v', 'libx264',  # Use H.264 codec for video
-            '-c:a', 'copy',     # Copy audio without re-encoding
-            '-preset', 'medium', # Balance between encoding speed and quality
-            output_path
-        ]
+        # Create the FFmpeg command based on duration mode
+        if duration_mode == 'preserve':
+            # Use fps filter to maintain original duration (drops/duplicates frames)
+            command = [
+                'ffmpeg',
+                '-i', input_path,
+                '-filter:v', f'fps={target_fps}',
+                '-c:v', 'libx264',  # Use H.264 codec for video
+                '-c:a', 'copy',     # Copy audio without re-encoding
+                '-preset', 'medium', # Balance between encoding speed and quality
+                output_path
+            ]
+        elif duration_mode == 'change':
+            # Get original FPS to calculate proper tempo adjustment
+            original_fps = get_video_fps(input_path)
+            tempo_ratio = target_fps / original_fps
+            
+            # Clamp tempo ratio to valid range (0.5 to 2.0 for atempo filter)
+            if tempo_ratio < 0.5:
+                # For very slow speeds, use multiple atempo filters
+                command = [
+                    'ffmpeg',
+                    '-i', input_path,
+                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
+                    '-filter:a', 'atempo=0.5,atempo=' + str(tempo_ratio/0.5),
+                    '-c:v', 'libx264',
+                    '-c:a', 'aac',
+                    '-preset', 'medium',
+                    output_path
+                ]
+            elif tempo_ratio > 2.0:
+                # For very fast speeds, use multiple atempo filters
+                command = [
+                    'ffmpeg',
+                    '-i', input_path,
+                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
+                    '-filter:a', 'atempo=2.0,atempo=' + str(tempo_ratio/2.0),
+                    '-c:v', 'libx264',
+                    '-c:a', 'aac',
+                    '-preset', 'medium',
+                    output_path
+                ]
+            else:
+                # Normal tempo range
+                command = [
+                    'ffmpeg',
+                    '-i', input_path,
+                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
+                    '-filter:a', f'atempo={tempo_ratio}',
+                    '-c:v', 'libx264',
+                    '-c:a', 'aac',
+                    '-preset', 'medium',
+                    output_path
+                ]
+        else:
+            raise ValueError(f"Invalid duration_mode: {duration_mode}. Use 'preserve' or 'change'.")
         
         # Run the command
         subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -42,7 +121,7 @@ def change_video_fps(input_path, output_path, target_fps):
         return False
 
 
-def process_folder(input_folder, output_folder, target_fps):
+def process_folder(input_folder, output_folder, target_fps, duration_mode='preserve'):
     """
     Process all video files in the input folder and save to output folder.
     
@@ -50,6 +129,7 @@ def process_folder(input_folder, output_folder, target_fps):
         input_folder (str): Path to the folder containing input videos
         output_folder (str): Path to save the converted videos
         target_fps (float): Target frames per second
+        duration_mode (str): 'preserve' to keep original duration, 'change' to alter duration
     """
     # Create output directory if it doesn't exist
     if not os.path.exists(output_folder):
@@ -77,7 +157,7 @@ def process_folder(input_folder, output_folder, target_fps):
         output_path = os.path.join(output_folder, filename)
         
         # Convert the video
-        if change_video_fps(input_path, output_path, target_fps):
+        if change_video_fps(input_path, output_path, target_fps, duration_mode):
             successful += 1
         else:
             failed += 1
@@ -91,6 +171,8 @@ def main():
     parser.add_argument('--input', '-i', required=True, help='Input folder containing videos')
     parser.add_argument('--output', '-o', required=True, help='Output folder for converted videos')
     parser.add_argument('--fps', '-f', type=float, default=30, help='Target FPS (default: 30)')
+    parser.add_argument('--duration', '-d', choices=['preserve', 'change'], default='preserve', 
+                       help='Duration mode: "preserve" keeps original duration (default), "change" alters duration')
     
     # Parse arguments
     args = parser.parse_args()
@@ -106,7 +188,7 @@ def main():
         return
     
     # Process all videos in the folder
-    process_folder(args.input, args.output, args.fps)
+    process_folder(args.input, args.output, args.fps, args.duration)
 
 
 if __name__ == "__main__":
