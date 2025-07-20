@@ -63,47 +63,20 @@ def change_video_fps(input_path, output_path, target_fps, duration_mode='preserv
                 output_path
             ]
         elif duration_mode == 'change':
-            # Get original FPS to calculate proper tempo adjustment
+            # Get original FPS to calculate proper itsscale
             original_fps = get_video_fps(input_path)
-            tempo_ratio = target_fps / original_fps
+            itsscale_value = original_fps / target_fps
             
-            # Clamp tempo ratio to valid range (0.5 to 2.0 for atempo filter)
-            if tempo_ratio < 0.5:
-                # For very slow speeds, use multiple atempo filters
-                command = [
-                    'ffmpeg',
-                    '-i', input_path,
-                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
-                    '-filter:a', 'atempo=0.5,atempo=' + str(tempo_ratio/0.5),
-                    '-c:v', 'libx264',
-                    '-c:a', 'aac',
-                    '-preset', 'medium',
-                    output_path
-                ]
-            elif tempo_ratio > 2.0:
-                # For very fast speeds, use multiple atempo filters
-                command = [
-                    'ffmpeg',
-                    '-i', input_path,
-                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
-                    '-filter:a', 'atempo=2.0,atempo=' + str(tempo_ratio/2.0),
-                    '-c:v', 'libx264',
-                    '-c:a', 'aac',
-                    '-preset', 'medium',
-                    output_path
-                ]
-            else:
-                # Normal tempo range
-                command = [
-                    'ffmpeg',
-                    '-i', input_path,
-                    '-filter:v', f'setpts={original_fps/target_fps}*PTS',
-                    '-filter:a', f'atempo={tempo_ratio}',
-                    '-c:v', 'libx264',
-                    '-c:a', 'aac',
-                    '-preset', 'medium',
-                    output_path
-                ]
+            # Use itsscale to change duration - this changes timestamps
+            command = [
+                'ffmpeg',
+                '-itsscale', str(itsscale_value),
+                '-i', input_path,
+                '-c:v', 'copy',     # Copy video without re-encoding
+                '-c:a', 'copy',     # Copy audio without re-encoding  
+                '-avoid_negative_ts', 'make_zero',
+                output_path
+            ]
         else:
             raise ValueError(f"Invalid duration_mode: {duration_mode}. Use 'preserve' or 'change'.")
         
@@ -153,8 +126,11 @@ def process_folder(input_folder, output_folder, target_fps, duration_mode='prese
         if file_ext not in video_extensions:
             continue
         
-        # Create output path with same filename
-        output_path = os.path.join(output_folder, filename)
+        # Create output path with fps in filename
+        filename_no_ext = os.path.splitext(filename)[0]
+        file_ext = os.path.splitext(filename)[1]
+        output_filename = f"{filename_no_ext}_fps{int(target_fps)}{file_ext}"
+        output_path = os.path.join(output_folder, output_filename)
         
         # Convert the video
         if change_video_fps(input_path, output_path, target_fps, duration_mode):
