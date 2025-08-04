@@ -81,10 +81,10 @@ def csv_to_text_files(csv_file_path, text_column, filename_column, output_direct
 
 if __name__ == "__main__":
     # Configuration
-    CSV_FILE = "/home/cseti/Data/Datasets/videos/Wallace and Gromit/bestofall/style/1440x1024/captions/video_captions_refined.csv"
-    TEXT_COLUMN = "triggered_caption"
-    FILENAME_COLUMN = "path"
-    OUTPUT_FOLDER = "/home/cseti/Data/Datasets/videos/Wallace and Gromit/bestofall/style/1440x1024/captions/txt"  # Define your output folder here
+    CSV_FILE = "/home/cseti/data2/AI/datasets/video/Arcane/Cut_Original/best_of/jinx/1920x816_to_1440x810/video_all/captions/llava_refined.csv"
+    TEXT_COLUMN = "refined_text"
+    FILENAME_COLUMN = "video_name"
+    OUTPUT_FOLDER = "/home/cseti/data2/AI/datasets/video/Arcane/Cut_Original/best_of/jinx/1920x816_to_1440x810/video_all/captions/"  # Define your output folder here
 
     
     # Run the function
